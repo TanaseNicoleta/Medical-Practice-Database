@@ -1,0 +1,675 @@
+--CREAREA TABELELOR
+--Crearea tabelului Medici
+create table Medici(
+id_medic number(7),
+Nume varchar2(30),
+Prenume varchar2(30),
+Specializare varchar2(30)
+);
+--Crearea tabelului Programe
+create table Programe
+(
+id_program number(7),
+id_medic number(7),
+ora_incepere TIMESTAMP,
+ora_incheiere TIMESTAMP,
+constraint pk_program primary key(id_program),
+constraint fk_pr_medic foreign key (id_medic) references Medici(id_medic));
+--Crearea tabelului Pacienti
+create table Pacienti
+(
+id_pacient number(7),
+Nume varchar2(30),
+Prenume varchar2(30),
+id_medic number(7),
+varsta number(3),
+CNP number(13),
+telefon number(10),
+constraint pk_pacienti primary key (id_pacient),
+constraint fk_pacient_medic foreign key (id_medic) references Medici(id_medic)
+);
+ --adaugare cheie primara in Medici
+ alter table medici add constraint pk_medici primary key (id_medic);
+
+--Crearea tabelului Programari
+ create table Programari
+ (
+ id_programare number(7),
+ id_pacient number(7),
+ id_medic number(7),
+ data_programarii date,
+ ora TIMESTAMP,
+ constraint pk_programare primary key (id_programare),
+ constraint fk_programare_medic foreign key (id_medic) references Medici(id_medic),
+ constraint fk_programare_pacient foreign key (id_pacient) references Pacienti(id_pacient)
+ );
+--Crearea tabelului Consultatii
+ create table Consultatii
+ (
+ id_diagnostic number(7),
+ denumire_diagnostic varchar2(30),
+ id_medic number(7),
+ id_pacient number(7),
+ id_programare number(7),
+ constraint pk_diagnostic primary key (id_diagnostic),
+ constraint fk_medic_diagnostic foreign key (id_medic) references Medici(id_medic),
+ constraint fk_pacient_diagnostic foreign key (id_pacient) references Pacienti(id_pacient),
+ constraint fk_programare_diagnostic foreign key (id_programare) references Programari(id_programare)
+ );
+--Crearea tabelului Retete
+ create table Retete
+ (
+ id_reteta number(7),
+ data_eliberarii date,
+ id_programare number(7),
+ id_diagnostic number(7),
+ constraint pk_reteta primary key (id_reteta),
+ constraint fk_programare_reteta foreign key (id_programare) references Programari(id_programare),
+ constraint fk_diagnostic_reteta foreign key (id_diagnostic) references Consultatii(id_diagnostic)
+ );
+--Crearea tabelului Medicamente
+ create table Medicamente
+(
+ cod_medicament number(7),
+ substanta varchar(30),
+ denumire varchar(30),
+ indicatii varchar(30),
+ contraindicatii varchar(30),
+ reactii_adverse varchar(30),
+ id_med_reteta number(7),
+ constraint pk_medicamente primary key (cod_medicament)
+ );
+--Crearea tabelului Medicament_Reteta
+ create table Medicament_reteta 
+ (
+ id_med_reteta number(7),
+ id_reteta number(7),
+ cod_medicament number(7),
+ dozaj number(4),
+ cantitate number(4),
+ constraint pk_med_reteta primary key (id_med_reteta),
+ constraint fk_reteta foreign key (id_reteta) references Retete(id_reteta),
+ constraint fk_medicament foreign key(cod_medicament) references Medicamente(cod_medicament)
+ );
+ --adaugarea de cheie externa in tabela Medicamente
+ alter table Medicamente add constraint fk_medicamente_med_ret foreign key (id_med_reteta) references Medicament_reteta(id_med_reteta);
+--alter drop, add
+--INSERAREA TUPLURILOR IN TABELE
+--inserarea in tabela Medici
+--1
+insert into Medici
+values (1110, 'Popa', 'Maria', 'Pediatrie');
+--2
+insert into Medici
+values (1111, 'Mircea', 'Adrian', 'Ortopedie');
+--3
+insert into Medici
+values (1112, 'Ionescu', 'Elena', 'Oftalmologie');
+--4
+insert into Medici
+values (1113, 'Nicolae', 'Diana', 'Pediatrie');
+--5
+insert into Medici
+values (1114, 'Chivu', 'Ana', 'Neurologie');
+--6
+insert into Medici
+values (1115, 'Popescu', 'Dumitru', 'Chirurgie');
+--7
+insert into Medici
+values (1116, 'Mihai', 'Cezar', 'Pediatrie');
+
+alter table Programe
+modify ora_incepere varchar2(10);
+
+alter table Programe
+modify ora_incheiere varchar2(10);
+
+--inserarea de tupluri in tabela Progame
+--1
+insert into Programe
+values (0, 1110, '10:00', '16:00');
+--2
+insert into Programe
+values (1, 1111, '8:00', '14:00');
+--3
+insert into Programe
+values (2, 1112, '14:00', '18:00');
+--4
+insert into Programe
+values (3, 1113, '13:00', '19:00');
+--5
+insert into Programe
+values (4, 1114, '9:00', '15:00');
+--6
+insert into Programe
+values (5, 1115, '10:00', '16:00');
+--7
+insert into Programe
+values (6, 1116, '12:00', '18:00');
+
+alter table Pacienti
+drop column telefon;
+--inserarea de tupluri in tabela Pacienti
+--Medic 0
+--0.1
+insert into Pacienti
+values (0000, 'Popa', 'Andrei', 1110, 25, 124015689456, 0724011566);
+--0.2
+insert into Pacienti
+values (0001, 'Turcu', 'Ion', 1110, 48, 113015689133, 0726012566);
+--0.3
+insert into Pacienti
+values (0002, 'Grecu', 'Mihai', 1110, 54, 124018689145, 0732011764);
+--0.4
+insert into Pacienti
+values (0003, 'Stancu', 'Victor', 1110, 34, 124017689456, 0724103506);
+--0.5
+insert into Pacienti
+values (0004, 'Ionea', 'Anca', 1110, 24, 124015489456, 0724311526);
+
+alter table Pacienti
+add telefon varchar2(10);
+
+update Pacienti
+set telefon='0724011566'
+where id_pacient=0;
+
+update Pacienti
+set telefon='0726012566'
+where id_pacient=1;
+
+update Pacienti
+set telefon='0732011764'
+where id_pacient=2;
+
+update Pacienti
+set telefon='0724103506'
+where id_pacient=3;
+
+update Pacienti
+set telefon='0724311526'
+where id_pacient=4;
+
+--Medic 1
+--1.1
+insert into Pacienti
+values (1000, 'Voicu', 'Daniela', 1111, 38, 116018089456, '0734021566');
+--1.2
+insert into Pacienti
+values (1001, 'Zaharia', 'Andreea', 1111, 43, 116018089466, '0734121578');
+--1.3
+insert into Pacienti
+values (1002, 'Deinea', 'Raluca', 1111, 36, 116018289316, '0734145500');
+--1.4
+insert into Pacienti
+values (1003, 'Faruz', 'Denis', 1111, 54, 120011889446, '0734023016');
+--1.5
+insert into Pacienti
+values (1004, 'Tunaru', 'Daniela', 1111, 28, 118018089356, '0734121522');
+--Medic 2
+--2.1
+insert into Pacienti
+values (2000, 'Voinescu', 'Dan', 1112, 56, 1217018089456, '0754121566');
+--2.2
+insert into Pacienti
+values (2001, 'Vasu', 'Ioana', 1112, 34, 1270340194566, '0751135566');
+--2.3
+insert into Pacienti
+values (2002, 'Andries', 'Tudor', 1112, 21, 1270180892161, '0754531516');
+--2.4
+insert into Pacienti
+values (2003, 'Mihai', 'Cristina', 1112, 35, 1271240894162, '0754121512');
+--2.5
+insert into Pacienti
+values (2004, 'Greavu', 'David', 1112, 17, 1271180893366, '0754021872');
+--Medic 3
+--3.1
+insert into Pacienti
+values (3000, 'Voinea', 'Alexandru', 1113, 50, 1217018089456, '0754121566');
+--3.2
+insert into Pacienti
+values (3001, 'Radu', 'Ioana', 1113, 30, 1270340254566, '0750135566');
+--3.3
+insert into Pacienti
+values (3002, 'Chivu', 'Teodor', 1113, 14, 1270181895160, '0724531716');
+--3.4
+insert into Pacienti
+values (3003, 'Dan', 'Cristina', 1113, 23, 1171242894262, '0752122532');
+--3.5
+insert into Pacienti
+values (3004, 'Dumitru', 'David', 1113, 17, 1281187894346, '0714022842');
+--Medic 4
+--4.1
+insert into Pacienti
+values (4000, 'Dainea', 'Angel', 1114, 15, 1217046089456, '0754121066');
+--4.2
+insert into Pacienti
+values (4001, 'Radus', 'Carol', 1114, 63, 1271580254566, '0750132206');
+--4.3
+insert into Pacienti
+values (4002, 'Horea', 'Vlad', 1114, 24, 1270111095160, '0724531126');
+--4.4
+insert into Pacienti
+values (4003, 'Stan', 'Maria', 1114, 34, 1015242894262, '0752122742');
+--4.5
+insert into Pacienti
+values (4004, 'Dumitru', 'Ioana', 1114, 57, 1214587894346, '0714412442');
+--Medic 5
+--5.1
+insert into Pacienti
+values (5000, 'Frunza', 'Andra', 1115, 32, 1217046081256, '0702121066');
+--5.2
+insert into Pacienti
+values (5001, 'Dima', 'Carolina', 1115, 10, 1271210254566, '0722130206');
+--5.3
+insert into Pacienti
+values (5002, 'Stanciu', 'Victoria', 1115, 57, 1310121095160, '0724031026');
+--5.4
+insert into Pacienti
+values (5003, 'Marin', 'Alexia', 1115, 54, 1015242894262, '0752122742');
+--5.5
+insert into Pacienti
+values (5004, 'Dumitru', 'Elena', 1115, 21, 1210581894346, '0710412242');
+
+--Medic 6
+--6.1
+insert into Pacienti
+values (6000, 'Lunza', 'Dana', 1116, 22, 1217046081256, '0702121066');
+--6.2
+insert into Pacienti
+values (6001, 'Ditu', 'Sabina', 1116, 40, 1234210254566, '0720131206');
+--6.3
+insert into Pacienti
+values (6002, 'Elanu', 'Victoria', 1116, 24, 1312221095160, '0724141026');
+--6.4
+insert into Pacienti
+values (6003, 'Marin', 'Ion', 1116, 54, 1115242594062, '0750120712');
+--6.5
+insert into Pacienti
+values (6004, 'Lungu', 'Tudor', 1116, 41, 1210484894346, '0714415342');
+--inserare de tupluri in tabela programari
+--1
+insert into Programari
+values (1, 1001, 1111, '20-nov-2020', '10:00');
+--2
+insert into Programari
+values (2, 1004, 1111, '18-dec-2020', '12:00');
+--3
+insert into Programari
+values (3, 0001, 1110, '10-nov-2020', '12:00');
+--4
+insert into Programari
+values (4, 0001, 1110, '3-dec-2020', '8:00');
+--5
+insert into Programari
+values (5, 2001, 1112, '12-nov-2020', '14:00');
+--6
+insert into Programari
+values (6, 2001, 1112, '24-nov-2020', '16:00');
+--7
+insert into Programari
+values (7, 3001, 1113, '4-nov-2020', '13:00');
+--8
+insert into Programari
+values (8, 3001, 1113, '21-dec-2020', '15:00');
+--9
+insert into Programari
+values (9, 4001, 1114, '20-nov-2020', '10:00');
+--10
+insert into Programari
+values (10, 4001, 1114, '19-nov-2021', '12:00');
+--11
+insert into Programari
+values (11, 5001, 1115, '14-nov-2021', '14:00');
+--12
+insert into Programari
+values (12, 5001, 1115, '10-nov-2020', '12:00');
+--13
+insert into Programari
+values (13, 6001, 1116, '15-jan-2021', '14:00');
+--14
+insert into Programari
+values (14, 6001, 1116, '18-feb-2021', '16:00');
+--inserare in Consultatii
+--1
+insert into Consultatii
+values (01, 'Boli ale sistemului nervos ', 1111, 1001, 1);
+--2
+insert into Consultatii
+values (02, 'Leziuni ale maduvei spinarii ', 1111, 1004, 2);
+--3
+insert into Consultatii
+values (03, 'Atac ischemic ', 1110, 0001, 3);
+--4
+insert into Consultatii
+values (04, 'Infectiile ale ochiului ', 1110, 0001, 4);
+--5
+insert into Consultatii
+values (05, 'Tulburari de echilibru',  1112, 2001, 5);
+--6
+insert into Consultatii
+values (06, 'Epiglotita ', 1112, 2001, 6);
+--7
+insert into Consultatii
+values (07, 'Insuficienta respiratorie ', 1113, 3001, 7);
+--8
+insert into Consultatii
+values (08, 'Angina pectorala ', 1113, 3001, 8);
+--9
+insert into Consultatii
+values (09, 'Durerea toracica ', 1114, 4001, 9);
+--10
+insert into Consultatii
+values (010, 'Interventii asupra piciorului ', 1114, 4001, 10);
+--11
+insert into Consultatii
+values (011, 'Osteomielita ', 1115, 5001, 11);
+--12
+insert into Consultatii
+values (012, 'Tendinita, miozita, bursita ', 1115, 5001, 12);
+--13
+insert into Consultatii
+values (013, 'Interventii pe tiroida ', 1116, 6001, 13);
+--14
+insert into Consultatii
+values (014, 'Psihozele ', 1116, 6001, 14);
+--inserarea in tabelul retete
+--1
+insert into Retete
+values (0111, '20-nov-2020 ',1, 01 );
+--2
+insert into Retete
+values (0112, '18-dec-2020 ',2, 02 );
+--3
+insert into Retete
+values (0113, '10-nov-2020 ',3, 03 );
+--4
+insert into Retete
+values (0114, '3-dec-2020 ',4, 04 );
+--5
+insert into Retete
+values (0115, '12-nov-2020 ',5, 05 );
+--6
+insert into Retete
+values (0116, '24-nov-2020 ',6, 06 );
+--7
+insert into Retete
+values (0117, '4-nov-2020 ',7, 07 );
+--8
+insert into Retete
+values (0118, '21-dec-2020 ',8, 08 );
+--9
+insert into Retete
+values (0119, '20-nov-2020 ',9, 09 );
+--10
+insert into Retete
+values (0120, '19-nov-2020 ',10, 010 );
+--11
+insert into Retete
+values (0121, '14-nov-2020 ',11, 011 );
+--12
+insert into Retete
+values (0122, '10-nov-2020 ',12, 012 );
+--13
+insert into Retete
+values (0123, '15-jan-2021 ',13, 013 );
+--14
+insert into Retete
+values (0124, '18-feb-2020 ',14, 014 );
+--inserare in Medicamente
+--1
+insert into medicamente
+values(11, 'Aripiprazole', 'Abilify', '1/12h', 'NU gavide', 'ingrasare');
+--2
+insert into medicamente
+values(12, 'AIbuprofen 400 mg', 'Nurofen', '1/6h', 'NU gavide', 'ingrasare');
+--3
+insert into medicamente
+values(13, 'Heparină sodică', 'Heparine Sodique Panpharma', '1/12h', 'NU gavide', 'ingrasare');
+--4
+insert into medicamente
+values(14, 'Claritromicina', 'Klabax', '1/12h', 'NU gavide', 'ingrasare');
+--5
+insert into medicamente
+values(15, 'Hidroclorotiazida', 'Hidroclorotiazida', '1/6h', 'NU gavide', 'ingrasare');
+--6
+insert into medicamente
+values(16, 'Ibuprofen', 'Nurofen', '1/6h', 'NU gavide', 'ingrasare');
+--7
+insert into medicamente
+values(17, ' bromură de glicopironiu', 'Sialanar', '1/12h', 'NU gavide', 'ingrasare');
+--8
+insert into medicamente
+values(18, 'NITROGLICERINĂ ', 'NITROGLICERINĂ ', '1/8h', 'NU gavide', 'ingrasare');
+--9
+insert into medicamente
+values(19, 'Nitrati', 'Diniter', '1/12h', 'NU gavide', 'ingrasare');
+--10
+insert into medicamente
+values(110, 'Baneocin', 'Baneocin', '1/4h', 'NU gavide', 'ingrasare');
+--11
+insert into medicamente
+values(111, 'Magneziu', 'Magneziu forte', '1/6h', 'NU gavide', 'ingrasare');
+--12
+insert into medicamente
+values(112, 'Calciu', 'Calciu', '1/8h', 'NU gavide', 'ingrasare');
+--13
+insert into medicamente
+values(113, 'Iod natural', 'Iod', '1/8h', 'NU gavide', 'ingrasare');
+--14
+insert into medicamente
+values(114, 'Aripiprazole', 'Abilify', '1/12h', 'NU gavide', 'ingrasare');
+
+--inserare in Medicamente_reteta
+--1
+insert into medicament_reteta
+values(1, 111, 11, 2, 20);
+--2
+insert into medicament_reteta
+values(2, 112, 12, 1, 40);
+--3
+insert into medicament_reteta
+values(3, 113, 13, 1, 20);
+--4
+insert into medicament_reteta
+values(4, 114, 14, 2, 40);
+--5
+insert into medicament_reteta
+values(5, 115, 15, 2, 20);
+--6
+insert into medicament_reteta
+values(6, 116, 16, 1, 60);
+--7
+insert into medicament_reteta
+values(7, 117, 17, 2, 40);
+--8
+insert into medicament_reteta
+values(8, 118, 18, 2, 20);
+--9
+insert into medicament_reteta
+values(9, 119, 19, 1, 60);
+--10
+insert into medicament_reteta
+values(10, 120, 110, 2, 40);
+--11
+insert into medicament_reteta
+values(11, 121, 111, 1, 20);
+--12
+insert into medicament_reteta
+values(12, 122, 112, 2, 20);
+--13
+insert into medicament_reteta
+values(13, 123, 113, 2, 60);
+--14
+insert into medicament_reteta
+values(14, 124, 114, 1, 20);
+--update, delete
+update programari
+set data_programarii='20-nov-2020'
+where id_pacient=2001 and id_programare=6;
+
+update programari
+set data_programarii='15-nov-2020'
+where id_pacient=2001;
+
+delete from medicament_reteta
+where id_med_reteta=4;
+
+
+
+--SELECT
+--Sa se afiseze denumirea medicamentelor ce apar pe reteta cu id-ul 116
+select m.denumire, mr.id_reteta
+from medicament_reteta mr
+join medicamente m
+on mr.cod_medicament=m.cod_medicament
+where mr.id_reteta=116;
+--Sa se afiseze cate retete au fost eliberate intre 10 noiembrie 2020 si 18 decembrie 2020
+select count(id_reteta)
+from retete
+where data_eliberarii between '10-nov-20' and '18-dec-20';
+--Sa se afiseze cate programari a avut fiecare medic
+select p.id_medic, m.nume, count(p.id_programare)
+from programari p
+join medici m
+on m.id_medic=p.id_medic
+group by p.id_medic, m.nume;
+--Sa se afiseze toate retetele care contin cel putin un medicament
+select id_reteta, count(id_med_reteta)
+from medicament_reteta
+group by id_reteta
+having count(id_med_reteta)>0;
+--Sa se afiseze toate medicamentele care incep cu N
+SELECT denumire
+FROM medicamente
+WHERE UPPER(denumire) LIKE 'N%';
+--Datele medicamentelor
+SELECT denumire||': '||substanta||' cu indicatiile: '||indicatii as "Detalii medicament"
+FROM medicamente;
+--Afisarea lungimii fiecarei denumiri de medicament
+SELECT length(denumire)
+FROM medicamente;
+--Afisarea duratei medii a unei programari
+select round(sum(durata)/count(id_programare),2)
+from programari;
+--Functii de tip data
+insert into programari
+values(15, 1001, 1111, '11-feb-2021', '9:00',1); 
+--Cate luni au trecut intre prima si ultima programare inregistrata
+  select MONTHS_BETWEEN
+         ((select data_programarii from programari where id_programare=15),
+          (select data_programarii from programari where id_programare=1) ) "Months"
+    FROM dual;
+--functii de conversie
+select to_char(data_programarii)
+from programari
+where id_pacient = 2001;
+--Modificarea dozajului pt medicamentele ce au fost prescrise cu dozaj de 2
+select DECODE(dozaj, 2, 4, dozaj)
+from medicament_reteta;
+--Sa se modifice durata programarii pt pacientii cu id-urile 1004 si 1001, in ordinea: pt 1004 se mai adauga 2 ore, pt 1001 1 ora.
+update programari
+set durata=
+case
+when id_pacient = 1004 then durata+2
+when id_pacient = 1001 then durata+1
+end;
+--Sa se afiseze numele tuturor medicilor si pacientilor in ordine alfabetica;
+select nume from medici
+union
+select nume from pacienti
+order by nume;
+--Sa se afiseze codul medicamentelor care nu apar pe nicio reteta
+select cod_medicament
+from medicamente
+minus
+select cod_medicament
+from medicament_reteta;
+--Sa se afiseze doar codul medicamentelor care apar pe o reteta
+select cod_medicament
+from medicamente
+intersect
+select cod_medicament
+from medicament_reteta;
+--Sa se afiseze denumirea medicamentelor ce apar prescrise pe o reteta
+select denumire
+from medicamente
+where cod_medicament in (select cod_medicament from medicament_reteta);
+--Sa se afiseze denumirea si id-ul diagnosticelor cu id-ul mai mare de 9
+select *
+from (select denumire_diagnostic, id_diagnostic from consultatii
+        where id_diagnostic>9);
+--Sa se afiseze denumirea si id-ul diagnosticelor primelor 2 intrari cu id-ul mai mare de 9
+select *
+from (select denumire_diagnostic, id_diagnostic from consultatii
+        where id_diagnostic>9)
+where rownum<=2;
+--stergerea coloanei durata si adaugarea coloanei ora_sfarsit
+alter table  programari 
+drop column durata;
+alter table programari
+modify ora_sfarsit varchar2(20);
+
+update programari
+set ora_sfarsit=
+case 
+when ora='9:00' then '10:00'
+when ora='10:00' then '12:00'
+when ora='8:00' then '10:00'
+when ora='11:00' then '13:00'
+when ora='12:00' then '14:00'
+when ora='13:00' then '14:00'
+when ora='14:00' then '16:00'
+when ora='15:00' then '16:00'
+when ora='16:00' then '18:00'
+end;
+--Sa se afiseze programarile care incep la ora 10
+SELECT  id_programare
+  FROM programari
+  START WITH ora='10:00'
+  CONNECT BY  PRIOR ora = ora_sfarsit;
+--Sa se creeze o tabela virtuala ce afiseaza lista pacientilor si a medicilor
+create view "Lista pacienti" as
+select p.nume||' '||p.prenume as Pacienti, m.nume||' '||m.prenume as Medic
+from pacienti p
+join medici m
+on m.id_medic=p.id_medic
+order by p.nume;
+select * from "Lista pacienti";
+--Sa se creeze o tabela virtuala ce afiseaza diagnosticul stabilit pt fiecare pacient
+create view "Programari pacienti" as
+select p.nume||' '||p.prenume as Pacienti, pr.data_programarii||' '||pr.ora as programare, c.denumire_diagnostic as Diagnostic
+from pacienti p
+join programari pr
+on p.id_pacient=pr.id_pacient
+join consultatii c
+on c.id_programare=pr.id_programare
+order by p.nume;
+
+select * from "Programari pacienti";
+--Sa  se creeze indecsi pt tabela programari 
+create index "Numar programare"
+on programari(id_medic);
+--Sa  se creeze indecsi pt tabela medicamente 
+create index "Numar medicament"
+on medicamente(denumire);
+--Sa se creeze un sinonim pt medici
+create synonym doctori
+for medici;
+--Sa se creeze un sinonim pt consultatii
+create synonym Diagnostic
+for consultatii;
+select *
+from diagnostic;
+--Sa se creeze o secventa ce genereaza randul pacientillor la programari
+alter table programari
+add rand_pacient number(2);
+
+create sequence rand
+start with 1
+increment by 1
+maxvalue 99;
+
+update programari
+set rand_pacient=rand.NEXTVAL;
+select rand_pacient from programari;
