@@ -1,0 +1,882 @@
+Blocuri PL/SQL
+Cursori
+--Sa se afiseze programarile de dupa data de dupa o data introdusa de la tastatura
+declare
+data_p date:='&d';
+cursor c is
+select * from programari;
+rc c%rowtype;
+
+begin
+open c;
+loop
+fetch c into rc;
+if rc.data_programarii > data_p then
+dbms_output.put_line(rc.id_pacient||' '||rc.id_medic||' '||rc.data_programarii||' '||rc.ora);
+end if;
+exit when c%notfound;
+end loop;
+close c;
+end;
+/
+ 
+--sa se afiseze primii 5 pacienti care au cele mai recente programari
+
+declare 
+cursor c is
+select pa.nume, pr.id_pacient, pr.data_programarii
+from programari pr
+join pacienti pa
+on pr.id_pacient=pa.id_pacient
+where data_programarii > sysdate
+order by data_programarii;
+rc c%rowtype;
+
+begin
+open c;
+loop
+    fetch c into rc;
+    DBMS_OUTPUT.PUT_LINE(rc.nume||' '||rc.id_pacient||' '||rc.data_programarii);
+   
+    exit when c%rowcount=5;
+end loop;
+
+close c;
+end;
+/
+
+ 
+-- sa se modifice pretul medicamentelor: creste cu 20%, unde exista pret, unde pretul este null devine 50.
+declare 
+cursor c is 
+select denumire, cost_medicament
+from medicamente;
+rc c%rowtype;
+begin
+open c;
+loop
+fetch c into rc;
+    if rc.cost_medicament is not null then 
+        update medicamente
+        set cost_medicament= nvl(cost_medicament,0)*1.2;
+    else 
+        update medicamente
+        set cost_medicament= 50;
+    end if;
+    dbms_output.put_line(rc.denumire||' '||rc.cost_medicament);
+exit when c%notfound;
+end loop;
+end;
+/
+ 
+
+--Pacientii care nu au programari
+set serveroutput on
+
+declare
+cursor c is
+select id_pacient, nume, prenume
+from pacienti;
+rc c%rowtype;
+ ok BOOLEAN;
+fara_programare exception;
+
+cursor c2 is
+select id_pacient from programari;
+rc2 c2%rowtype;
+
+begin
+open c;
+loop
+fetch c into rc;
+ok:=false;
+
+    begin
+        open c2;
+        loop
+        fetch c2 into rc2;
+        if rc.id_pacient=rc2.id_pacient 
+            then ok:=true;
+        end if;
+        exit when c2%notfound;   
+        end loop;
+        close c2;
+    end;
+exit when c%notfound;
+
+    if ok=false 
+        dbms_output.put_line(rc.prenume);
+    end if;
+
+end loop;
+close c;
+end;
+/
+ 
+
+--sa se afiseze datele medicului cu id-ul 1114
+declare 
+v_nume medici.nume%type;
+v_prenume medici.prenume%type;
+v_specializare medici.specializare%type;
+begin
+select nume, prenume, specializare into v_nume, v_prenume, v_specializare
+from medici
+where id_medic=1114;
+dbms_output.put_line(SQL%rowcount);
+dbms_output.put_line(v_nume||' '||v_prenume);
+end;
+/
+ 
+
+--sa se afiseze retetele eliberate in 20 noiembrie 2020
+set serveroutput on
+declare
+cursor c is 
+select id_reteta, data_eliberarii
+from retete
+order by data_eliberarii desc;
+rc c%rowtype;
+
+begin
+for rc in c loop
+    if rc.data_eliberarii='20-NOV-2020' 
+    then
+    dbms_output.put_line(rc.id_reteta);
+    end if;
+end loop;
+end;
+/
+
+ 
+
+
+Exceptii
+
+--1. Sa se afiseze datele medicului cu id-ul 1114 si daca nu exista, exceptie.
+
+declare
+v_nume medici.nume%type;
+v_prenume medici.prenume%type;
+v_specializare medici.specializare%type;
+
+begin
+select nume, prenume, specializare into v_nume, v_prenume, v_specializare
+from medici
+where id_medic=1114;
+
+dbms_output.put_line(SQL%rowcount);
+if v_nume= NULL then 
+	raise no_data_found;
+else
+     dbms_output.put_line(v_nume||' '||v_prenume);
+end if;
+
+exception
+when no_data_found then 
+dbms_output.put_line('Nu exista pacientul.');
+end;
+/ 
+ 
+  (pt id-ul 11).
+
+--2. Sa se afiseze retetele eliberate in 20 noiembrie 2020 daca exista, daca nu sunt retete eliberate in aceasta data intrati pe exceptie, exceptie
+
+set serveroutput on
+declare
+cursor c is
+select id_reteta, data_eliberarii
+from retete
+where data_eliberarii='20-NOV-2020'
+order by data_eliberarii desc;
+
+rc c%rowtype;
+
+ ok boolean :=false;
+
+begin
+open c;
+loop
+fetch c into rc;
+    if c%rowcount = 0 then raise no_data_found;
+    else
+    dbms_output.put_line(rc.id_reteta);
+    end if;
+exit when c%notfound;
+end loop;
+close c;
+exception
+when no_data_found then 
+dbms_output.put_line('Nu exista retete in acea data.');
+end;
+/
+ 
+ 
+(Pentru o data in care nu exista.)
+
+--3. Sa se afiseze programarile de dupa data de dupa o data introdusa de la tastatura, daca nu exista, exceptie
+
+declare
+data_p date:='&d';
+
+cursor c is
+select * from programari
+where data_programarii > data_p;
+
+rc c%rowtype;
+fara_programari exception;
+ 
+
+begin
+open c;
+loop
+fetch c into rc;
+
+if c%rowcount > 0 then
+dbms_output.put_line(rc.id_pacient||' '||rc.id_medic||' '||rc.data_programarii||' '||rc.ora);
+else 	
+raise fara_programari;
+end if;
+
+exit when c%notfound;
+end loop;
+close c;
+
+exception WHEN
+fara_programari then dbms_output.put_line('Nu exista programari.');
+end;
+/
+
+ (Pt data 20-dec-2025)
+ (Pt data de 20-nov-2020)
+--4.Sa se afiseze programarile unui pacient introdus de la tastatura, daca nu are tratati exceptia.
+declare
+id_p Number;
+cursor c is
+select pa.nume, pr.id_pacient, pr.data_programarii
+from programari pr
+join pacienti pa
+on pr.id_pacient=pa.id_pacient
+where pa.id_pacient = &id_p;
+
+rc c%rowtype;
+nu_sunt_programari exception;
+ 
+
+begin
+open c;
+loop
+    fetch c into rc;
+    if c%rowcount = 0 then raise nu_sunt_programari;
+    else 
+     DBMS_OUTPUT.PUT_LINE(rc.nume||' '||rc.id_pacient||' '||rc.data_programarii);
+    end if;
+    exit when c%notfound;
+end loop;
+close c;
+exception
+when nu_sunt_programari then 
+dbms_output.put_line('Nu sunt programari de afisat.');
+end;
+/
+
+ (Pt id=1001)
+ (Pt id=1006)
+
+FUNCTII
+--1. Sa se creeze o functie pt a calcula cati pacienti are un medic al carui id este transmis ca parametru in.
+set serveroutput on
+
+CREATE OR REPLACE FUNCTION chk_programari( id_m medici.id_medic%type) RETURN NUMBER
+AS
+count_prog NUMBER;
+BEGIN
+select count(id_programare) into count_prog
+from programari
+where id_medic =id_m
+group by id_medic;
+
+return count_prog;
+END chk_programari;
+/
+
+execute dbms_output.put_line(chk_programari(1111));	
+
+ 
+--2. Sa se creeze o functie pentru a calcula costul total al medicamentelor prescrise pe o anumita reteta (id reteta trimis ca parametru)
+
+CREATE OR REPLACE FUNCTION cost_total( id_r medicament_reteta.id_reteta%type) RETURN NUMBER
+AS
+suma_totala NUMBER;
+
+BEGIN
+select sum(m.cost_medicament) into suma_totala
+from medicamente m
+join medicament_reteta mr
+on m.cod_medicament = mr.cod_medicament
+where mr.id_reteta = id_r
+group by mr.id_reteta;
+
+return suma_totala;
+END cost_total;
+/
+execute dbms_output.put_line(cost_total(111)||' RON');	
+
+ 
+--3. Sa se creeze o functie care verifica daca un pacient are programare in sapt curenta, se returneaza mesaj.
+
+CREATE OR REPLACE FUNCTION prog_sapt( id_p pacienti.id_pacient%type) RETURN BOOLEAN
+AS
+cursor c is
+select id_programare
+from programari
+where id_pacient = id_p AND data_programarii BETWEEN SYSDATE AND SYSDATE+7;
+rc c%rowtype;
+
+BEGIN
+open c;
+    loop
+    fetch c into rc;
+    if c%rowcount = 0 then 
+        return false;
+    else 
+        return true;
+    end if;
+    exit when c%notfound;
+    end loop;
+close c;
+END prog_sapt;
+/
+
+BEGIN
+IF prog_sapt(1001) = false then
+    dbms_output.put_line('Nu exista programari.');
+ELSE
+    dbms_output.put_line('Exista programari.');
+END IF;
+END;
+/	
+ 
+--4. Sa se verifice care dintre pacientii cabinetului medical poate doan sange? (are varsta intre 18 si 60 de ani)
+
+CREATE OR REPLACE FUNCTION chkVarsta_pacient( id_p pacienti.id_pacient%type) RETURN BOOLEAN
+AS
+varsta_p number;
+BEGIN
+select varsta into varsta_p
+from pacienti
+where id_pacient =id_p;
+
+if varsta_p BETWEEN 18 AND 60 then
+    return true;
+else 
+return false;
+end if;
+END chkVarsta_pacient;
+/
+
+declare
+id_p pacienti.id_pacient%type:=&x;
+begin
+    if chkVarsta_pacient(id_p) = true then
+        dbms_output.put_line('Poate dona.');
+    else
+        dbms_output.put_line('Nu poate dona.');
+    end if;
+end;
+/
+ (Pt. id = 1001)
+ (Pt. id = 4001)
+
+PROCEDURI
+--1. Sa se creeze o procedura pt a selecta programarile unui medic si numele pacientului pt fiecare programare
+set serveroutput on
+
+CREATE OR REPLACE PROCEDURE prog( id_m medici.id_medic%type)
+AS
+id_p Number;
+cursor c is
+select m.nume, pr.id_pacient, pa.nume||' '||pa.prenume as pacient, pr.data_programarii
+from programari pr
+join medici m
+on pr.id_medic=m.id_medic
+join pacienti pa
+on pa.id_medic=m.id_medic
+where m.id_medic = id_m;
+rc c%rowtype;
+nu_sunt_programari exception;
+ 
+
+begin
+open c;
+loop
+    fetch c into rc;
+    if c%rowcount = 0 then raise nu_sunt_programari;
+    else 
+     DBMS_OUTPUT.PUT_LINE(rc.nume||' '||rc.pacient||' '||rc.data_programarii);
+    end if;
+    exit when c%notfound;
+end loop;
+close c;
+exception
+when nu_sunt_programari then 
+dbms_output.put_line('Nu sunt programari de afisat.');
+end;
+/
+execute prog(1111);
+ 
+
+--2. Sa se creeze o procedura pt a a adauga o noua reteta.
+CREATE OR REPLACE PROCEDURE adauga_reteta(
+id_ret IN retete.id_reteta%TYPE,
+data_el IN retete.data_eliberarii%TYPE,
+id_d IN retete.id_diagnostic%TYPE)
+IS
+BEGIN
+INSERT INTO retete
+VALUES (id_ret, data_el, id_d);
+END adauga_reteta;
+/
+EXECUTE adauga_reteta (125, '18-FEB-20', 2);
+ 
+
+--3. Sa se creeze o procedura prin care toate programarile unui pacient dintr-o anumita data(ex test:'20-NOV-20') 
+--vor fi mutate cu o saptamana mai tarziu
+set serveroutput on
+CREATE OR REPLACE PROCEDURE modifica_data
+( data_p IN programari.data_programarii%TYPE,
+  id_p IN programari.id_pacient%TYPE )
+IS
+BEGIN
+UPDATE programari
+SET data_programarii = data_programarii + 7
+WHERE data_programarii = data_p AND id_pacient = id_p;
+END;
+/
+EXECUTE modifica_data ('20-Nov-20', 1001);
+ 
+
+--4. Sa se creeze o procedura care sa afiseze detaliile medicamentelor care au fost prescrise pt un anumit diagnostic trimis prin id ca parametru de intrare.
+CREATE OR REPLACE PROCEDURE med( id_d retete.id_diagnostic%type) 
+AS
+cursor c is 
+select m.cod_medicament, m.denumire, m.substanta, m.indicatii, m.cost_medicament
+from medicamente m
+join medicament_reteta mr
+on m.cod_medicament = mr.cod_medicament
+join retete r
+on mr.id_reteta = r.id_reteta
+where r.id_diagnostic =id_d;
+rc c%rowtype;
+
+BEGIN
+open c;
+    loop
+    fetch c into rc;
+    if c%rowcount = 0 then 
+        dbms_output.put_line('Nu exista medicamente de afisat');
+    else    
+        dbms_output.put_line(rc.cod_medicament||' '||rc.denumire||' '||rc.substanta||' '||rc.indicatii||' '||rc.cost_medicament);
+    END IF;
+    exit when c%notfound;
+    end loop;
+close c;
+END med;
+/
+execute med(9);
+ 
+
+PACHETE
+
+CREATE OR REPLACE PACKAGE pachet_pacienti AS
+    PROCEDURE inlocuieste_medic(id_vechi medici.id_medic%type, id_nou medici.id_medic%type, nume medici.nume%type, 
+prenume medici.prenume%type, specializare medici.specializare%type);
+
+PROCEDURE numar_programari(id_p pacienti.id_pacient%type);
+
+FUNCTION plata_max(id_p pacienti.id_pacient%type)RETURN NUMBER;
+
+PROCEDURE istoric_diagnostic(id_p pacienti.id_pacient%type);
+
+FUNCTION plata_reteta(id_ret retete.id_reteta%type)RETURN NUMBER;
+END pachet_pacienti;
+/
+
+
+CREATE OR REPLACE PACKAGE BODY pachet_pacienti AS
+
+    --Medicul cu id-ul 1110 a iesit la pensie, iar toti pacientii lui vor fi transferati catre un medic nou angajat, 
+    --inclusiv programarile care nu au avut loc inca. Medicul cel nou preia programul medicului vechi. programul medicului vechi devine null;
+
+    PROCEDURE inlocuieste_medic(id_vechi medici.id_medic%type, id_nou medici.id_medic%type, nume medici.nume%type, 
+prenume medici.prenume%type, specializare medici.specializare%type)
+AS
+CURSOR c_pacienti IS SELECT id_pacient
+                    FROM pacienti
+                    WHERE id_medic = id_vechi;
+                    
+rc_pacienti c_pacienti%ROWTYPE;
+
+CURSOR c_programari IS SELECT id_programare
+                        FROM programari
+                        WHERE id_medic = id_vechi AND data_programarii > SYSDATE;
+rc_programari c_programari%ROWTYPE;
+
+id_prog medici.id_program%type;
+
+BEGIN
+select id_program into id_prog from medici where id_medic = id_vechi;
+
+UPDATE medici 
+SET id_program = NULL
+WHERE id_medic = id_vechi;
+
+insert into medici
+values (id_nou, nume, prenume, specializare, id_prog);
+
+OPEN c_pacienti;
+    LOOP
+    FETCH c_pacienti INTO rc_pacienti;
+        IF c_pacienti%ROWCOUNT=0 THEN 
+            RAISE no_data_found;
+        ELSE
+            UPDATE pacienti
+            SET id_medic = id_nou
+            WHERE id_pacient = rc_pacienti.id_pacient;
+        END IF;
+    EXIT WHEN c_pacienti%NOTFOUND;
+    END LOOP;
+CLOSE c_pacienti;
+
+OPEN c_programari;
+    LOOP
+    FETCH c_programari INTO rc_programari;
+        IF c_programari%ROWCOUNT=0 THEN 
+            RAISE no_data_found;
+        ELSE
+            
+            UPDATE programari
+            SET id_medic = id_nou
+            WHERE id_programare = rc_programari.id_programare;
+        END IF;
+    EXIT WHEN c_programari%NOTFOUND;
+    END LOOP;
+CLOSE c_programari;
+
+
+EXCEPTION
+    WHEN no_data_found THEN
+        dbms_output.put_line('NU EXISTA MEDICUL CU ID-UL INTRODUS.');
+END inlocuieste_medic;
+
+
+--Sa se afiseze cate programari a avut un pacient introdus de la tastatura
+    PROCEDURE numar_programari(id_p pacienti.id_pacient%type)
+AS
+                    
+nr NUMBER;
+BEGIN
+SELECT COUNT(id_programare) INTO nr 
+FROM programari
+WHERE id_pacient = id_p;
+
+IF nr =0 THEN 
+RAISE no_data_found;
+ELSE 
+DBMS_OUTPUT.PUT_LINE('PACIENTUL INTRODUS ARE: '||nr||' PROGRAMARI.');
+END IF;
+
+EXCEPTION
+    WHEN no_data_found THEN
+        dbms_output.put_line('NU EXISTA PACIENTUL CU ID-UL INTRODUS.');
+END numar_programari;
+    
+    
+--Functie care returneaza suma totala achitata pana in prezent de un pacient.
+FUNCTION plata_max(id_p pacienti.id_pacient%type) 
+RETURN NUMBER AS
+
+suma_totala NUMBER;
+nr number;
+data_p programari.data_programarii%type;
+
+
+BEGIN
+
+SELECT count(c.id_diagnostic), SUM(c.cost_consultatie) INTO nr, suma_totala
+FROM consultatii c 
+JOIN programari p
+ON c.id_programare = p.id_programare
+WHERE p.id_pacient = id_p
+GROUP BY  p.id_pacient;
+
+
+if nr = 0 THEN 
+return nr;
+else 
+return suma_totala;
+end if;
+EXCEPTION
+WHEN no_data_found then return 0;
+
+END plata_max;
+
+--PROCEDURA CARE AFISEAZA ISTORICUL DIAGNOSTIC AL UNUI PACIENT.
+PROCEDURE istoric_diagnostic(id_p pacienti.id_pacient%type)
+AS
+cursor c is select c.id_diagnostic, c.denumire_diagnostic 
+            from consultatii c
+            join programari p
+            on c.id_programare = p.id_programare
+            where p.id_pacient = id_p;
+rc c%rowtype;
+BEGIN
+open c;
+LOOP 
+FETCH c INTO rc;
+if c%rowcount = 0 then 
+raise no_data_found;
+end if;
+EXIT WHEN c%NOTFOUND;
+DBMS_OUTPUT.put_line(rc.denumire_diagnostic);
+END LOOP;
+
+close c;
+EXCEPTION
+WHEN no_data_found THEN 
+dbms_output.put_line('Pacientul nu are consultatii.');
+
+END istoric_diagnostic;
+
+--FUNCTIA CARE RETURNEAZA VALOAREA TOTALA A UNEI RETETE(suma preturilor medicamentelor)
+FUNCTION plata_reteta(id_ret retete.id_reteta%type)
+RETURN NUMBER AS
+
+valoare number;
+
+BEGIN
+ select SUM(m.cost_medicament*mr.dozaj) into valoare
+            from medicamente m
+            join medicament_reteta mr
+            on m.cod_medicament = mr.cod_medicament
+            where mr.id_reteta = id_ret;
+
+return valoare;
+
+
+END plata_reteta;
+end pachet_pacienti;
+/
+
+
+
+execute pachet_pacienti.inlocuieste_medic(1118, 1121, 'Mihai', 'Marius', 'Ortopedie');
+execute numar_programari(1);
+ 
+
+
+--Sa se afiseze id-ul pacientului care a achitat cel mai mult pana in present.
+DECLARE
+v_max NUMBER:=0;
+idx number;
+cursor c is select id_pacient from pacienti;
+rc c%rowtype;
+BEGIN
+open c;
+loop
+fetch c into rc;
+    if pachet_pacienti.plata_max(rc.id_pacient)>0 then
+    if v_max < pachet_pacienti.plata_max(rc.id_pacient) then
+        v_max:= pachet_pacienti.plata_max(rc.id_pacient);
+        idx := rc.id_pacient;
+    end if;
+end if;
+exit when c%notfound;
+end loop;
+close c;
+dbms_output.put_line(idx||' '||v_max);
+
+END;
+/
+ 
+
+exec pachet_pacienti.istoric_diagnostic(1);
+
+ 
+
+DECLARE
+val_r NUMBER;
+
+BEGIN
+val_r:=pachet_pacienti.plata_reteta(111);
+dbms_output.put_line(val_r);
+
+END;
+/
+
+ 
+
+APLICATII LUCRARE 05 mai
+--1. Sa se creeze o procedura care, pentru un medic dat ca parametru, sa afiseze:
+--numele complet, specializarea, ora de incepere, ora de incheiere, numarul de pacienti de sex feminin. 
+--Trateaza prin exceptie cazul in care medicul indicat nu exista. Apeleaza procedura
+
+SET SERVEROUTPUT ON 
+CREATE OR REPLACE PROCEDURE date_medic(id_m medici.id_medic%type)
+AS
+CURSOR c IS SELECT m.nume as nume, m.prenume as prenume, m.specializare as specializare, 
+                    pr.ora_incepere as ora_in, pr.ora_incheiere as ora_sf, count(pac.id_pacient) as Pacienti_m
+FROM medici m
+JOIN programe pr
+ON m.id_medic = pr.id_medic
+JOIN pacienti pac
+ON pr.id_medic = pac.id_medic
+WHERE trunc(pac.cnp/ 1000000000000,0)= 1 AND m.id_medic = id_m
+ --nu aveam paienti al caror cnp sa inceapa cu 2 in tabela
+GROUP BY m.nume, m.prenume, m.specializare, pr.ora_incepere, pr.ora_incheiere;
+
+rc c%rowtype;
+
+BEGIN
+OPEN c;
+LOOP
+        FETCH c INTO rc;  
+        IF c%ROWCOUNT=0 THEN
+        raise no_data_found;
+        END IF;
+        EXIT WHEN c%NOTFOUND;
+        DBMS_OUTPUT.put_line('Medicul '||rc.nume||' '||rc.prenume||' cu specializarea '|| rc.specializare||
+        ' are programul '||rc.ora_in||' : '||rc.ora_sf||' si are '|| rc.Pacienti_m||' pacienti de sex masculin.');
+END LOOP;
+CLOSE c;
+EXCEPTION 
+    WHEN no_data_found THEN 
+     DBMS_OUTPUT.put_line('Medicul introdus nu exista');
+END date_medic;
+/
+exec date_medic(1116);
+
+ 
+
+
+--2. Sa se creeze un bloc PL/SQL care, folosind 2 cursori, sa afiseze pentru fiecare reteta
+--(se vor afisa: id_reteta, data eliberare, nume medic) lista medicamentelor continute (se vor afisa denumire, indicatii, dozaj).
+
+DECLARE
+CURSOR c_retete IS SELECT r.id_reteta as id, r.data_eliberarii as data, m.nume ||' '|| m.prenume as Nume_medic
+                    FROM retete r
+                    Join consultatii c
+                    ON r.id_diagnostic = c.id_diagnostic
+                    JOIN programari pr
+                    ON c.id_programare = pr.id_programare
+                    join medici m
+                    on m.id_medic = pr.id_medic;
+                    
+CURSOR c_lista(id_r retete.id_reteta%type)IS 
+SELECT med.denumire as denumire,mr.dozaj as dozaj, med.indicatii as indicatii
+FROM medicamente med
+join medicament_reteta mr
+on mr.cod_medicament = med.cod_medicament
+join retete r
+on r.id_reteta = mr.id_reteta
+where r.id_reteta =  id_r;
+                                
+rc_retete c_retete%rowtype;
+rc_lista c_lista%rowtype;
+BEGIN
+open c_retete;
+loop
+    fetch c_retete into rc_retete;
+    dbms_output.put_line(rc_retete.id||' '||rc_retete.data||' '||rc_retete.Nume_medic);
+        open c_lista(rc_retete.id);
+        loop
+        fetch c_lista into rc_lista;
+            dbms_output.put_line(rc_lista.denumire||' '||rc_lista.dozaj||' '||rc_lista.indicatii);
+        exit when c_lista%notfound;
+        end loop;
+        close c_lista;
+    exit when c_retete%notfound;
+end loop;
+close c_retete;
+END;
+/
+
+ 
+
+Declansatori
+--1
+create or replace trigger sterge_reteta
+after delete on retete
+for each row
+BEGIN
+IF deleting THEN
+delete from medicament_reteta where id_reteta=:old.id_reteta;
+
+END IF;
+END sterge_reteta;
+/
+
+delete from retete where id_reteta = 124;
+
+ 
+Retete
+ 
+ 
+Medicament_reteta
+ 
+ 
+--2. Trigger care sa impiedice modificarea unui diagnostic pus anterior.
+CREATE OR REPLACE TRIGGER update_diagnostic
+before update of id_diagnostic, denumire_diagnostic on consultatii
+for each row
+begin
+    raise_application_error(-20000, 'Nu puteti modifica un diagnostic anterior.');
+ 
+END update_diagnostic;
+/
+
+update consultatii
+set denumire_diagnostic = 'Angina pectorala'
+where id_diagnostic=14;
+
+ 
+
+--3.Trigger care anunta daca sunt prea multe programari in aceasi zi.
+
+create or replace trigger verificare_program
+before insert or update of ora
+on programari
+for each row
+
+declare 
+v_prog number;
+
+begin
+select count(*) into v_prog
+from programari 
+where id_medic=:new.id_medic and data_programarii=:new.data_programarii;
+
+if v_prog>5 then
+raise_application_error(-20000, 'Programarea nu se poate inregistra.');
+
+end if;
+
+end;
+/
+
+insert into programari
+VALUES(16, 1001, 1111, '11-feb-2021', '10:00', '10:30', 17);
+
+insert into programari
+VALUES(18, 1001, 1111, '11-feb-2021', '11:00', '11:30', 18);
+insert into programari
+VALUES(19, 1001, 1111, '11-feb-2021', '12:00', '12:30', 19);
+insert into programari
+VALUES(20, 1001, 1111, '11-feb-2021', '13:00', '13:30', 20);
+insert into programari
+VALUES(21, 1001, 1111, '11-feb-2021', '14:00', '14:30', 21);
+
+insert into programari
+VALUES(22, 1001, 1111, '11-feb-2021', '14:00', '14:30', 21);
+
+ 
